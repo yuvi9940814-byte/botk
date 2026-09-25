@@ -29,7 +29,7 @@ from flask import Flask
 import threading
 from waitress import serve
 from telethon.tl.functions.channels import EditBannedRequest
-from telethon.tl.types import ChatBannedRights, MessageEntityCustomEmoji
+from telethon.tl.types import ChatBannedRights
 from telethon.tl.functions.contacts import BlockRequest, UnblockRequest   # ✅ ADDED
 
 # ─── CONFIGURATION ───
@@ -40,193 +40,6 @@ MY_OWNER_IDS = {int(x) for x in os.environ.get("OWNER_IDS", "8909378644,87110824
 UPI_ID = os.environ.get("UPI_ID", "paryush01@nyes")
 QR_IMAGE_PATH = os.environ.get("QR_IMAGE_PATH", "upi_qr.jpg")
 PREMIUM_FEATURES_LINK = os.environ.get("PREMIUM_FEATURES_LINK", "https://t.me/userbotsupport_ZA/20")
-
-# ─── PREMIUM UI / CUSTOM EMOJI ─────────────────────────────────────
-# Put Telegram custom-emoji document IDs here, comma-separated.
-# Example: PREMIUM_EMOJI_IDS="5368324170671202286,5368324170671202287"
-# If empty/invalid, the UI safely falls back to normal Unicode emoji.
-DEFAULT_PREMIUM_EMOJI_IDS = [
-    5271801931814165886,
-    5269682734820777950,
-    5269371036159203113,
-    5269427536453984598,
-    5271527792641595125,
-    5269500885905468781,
-    5271536803482981220,
-    5422565505925928085,
-    5422444280473998663,
-    5422660506307547756,
-    5422744941069619133,
-    5422740611742585475,
-    5422367241645611298,
-    5361564600816902562,
-    5278684393567704778,
-    5456133703296097741,
-    5330538710553347418,
-    5456633061963734854,
-    5397879236499353888,
-    5332811302303715143,
-    5415704802476708227,
-    5264948130377378909,
-    5229227046290343318,
-    5224412254807541483,
-    5334812499365612386,
-    5458527743836692025,
-    5456614413215736392,
-    5456531614836203739,
-    5246993109790783746,
-    5456550151915052413,
-    5224549345868653324,
-    5316847419965579451,
-    5400230576475087657,
-    5285482484983693425,
-    5249454864785764508,
-    5229173741451230931,
-    5361842201733115708,
-    5330087038907595350,
-    5330073587070020515,
-    5330514439693152547,
-    5330312778093704176,
-    5330289482191087980,
-    5330090758349271612,
-    5332290778037235887,
-    5330475535879384706,
-    5231071730449004635,
-    5229211777681604441,
-    5359762904985928475,
-    5359520801974416000,
-    5359772285194503642,
-    5359829906475744831,
-    5359708822757737345,
-    5359576670909005905,
-    5357099359542477899,
-    5357450365744744592,
-    5359551794458426309,
-    5359443861930280266,
-    5359729533090037697,
-    5359454053887670307,
-    5359555711468600070,
-    5359621656396464246,
-    5359588280205605798,
-    5359764253605661417,
-    5359723460006280513,
-    5359335770488340137,
-    5359737551793979234,
-    5359797475177691478,
-    5359710115542892342,
-    5359736589721308600,
-    5359716265936059199,
-    5359536628928906907,
-    5359625831104677015,
-    5359329422526675284,
-    5357365956752476811,
-    5359402402610970679,
-    5359460620892667192,
-    5359737470189600863,
-    5359618830307982702,
-    5359495792379854711,
-    5359410004703084903,
-    5359681828888282206,
-    5357515211160980182,
-    5359531814270566391,
-    5429349728892522445,
-    5427328491513224187,
-    5429245339712391471,
-    5447657898870086204,
-    5449577822265840863,
-    5429446125138512793,
-    5258347573097303596,
-    5258071376635398741,
-    5258021357446268553,
-    5429615157871414036,
-    5258006320765764724,
-    5258407449236376533,
-    5258039658301914176,
-    5258011509086261082,
-    5260586616858117316,
-    5258202428972500407,
-    5258365070794067172
-]
-PREMIUM_EMOJI_IDS = []
-_emoji_source = os.environ.get("PREMIUM_EMOJI_IDS", "").strip()
-for _eid in (_emoji_source.split(",") if _emoji_source else [str(x) for x in DEFAULT_PREMIUM_EMOJI_IDS]):
-    _eid = _eid.strip()
-    if _eid.isdigit():
-        PREMIUM_EMOJI_IDS.append(int(_eid))
-
-PREMIUM_UI_TITLE = "✦ 𝐙𝐘ЯΣ𝐗 ✕ ΛΣƬΉΣЯ • 𝐏𝐑𝐄𝐌𝐈𝐔𝐌 ✦"
-PREMIUM_UI_DIVIDER = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-def _premium_entity_text(text: str):
-    """Return text + Telegram custom-emoji entities, with safe fallback."""
-    if not PREMIUM_EMOJI_IDS or MessageEntityCustomEmoji is None:
-        return text, None
-    # Replace selected standard emoji with a one-codepoint placeholder and
-    # attach custom-emoji entities. Offsets are calculated in UTF-16 units.
-    targets = ["💎", "✨", "⚡", "👑", "🛡️", "🚀", "💰", "🎟️", "🔗", "✅", "❌", "📅"]
-    chars = list(text)
-    entities = []
-    id_index = 0
-    i = 0
-    while i < len(chars):
-        # Handle the two-codepoint shield/ticket/calendar variants as strings.
-        matched = None
-        for t in targets:
-            if text.startswith(t, i):
-                matched = t
-                break
-        if not matched:
-            i += 1
-            continue
-        # Keep exactly one visible codepoint so the entity length is stable.
-        replacement = "◈"
-        before = text[:i]
-        offset = len(before.encode("utf-16-le")) // 2
-        # Replace the matched slice in the working string.
-        chars[i:i + len(matched)] = [replacement]
-        entity = MessageEntityCustomEmoji(
-            offset=offset,
-            length=1,
-            document_id=PREMIUM_EMOJI_IDS[id_index % len(PREMIUM_EMOJI_IDS)]
-        )
-        entities.append(entity)
-        id_index += 1
-        # Rebuild text because matched strings can contain variation selectors.
-        text = "".join(chars)
-        i += 1
-    return text, entities or None
-
-async def premium_reply(event, text, buttons=None, **kwargs):
-    try:
-        text, entities = _premium_entity_text(text)
-        if entities:
-            kwargs["formatting_entities"] = entities
-            kwargs.pop("parse_mode", None)
-        return await event.reply(text, buttons=buttons, **kwargs)
-    except FloodWaitError as e:
-        await asyncio.sleep(e.seconds + 1)
-        return await event.reply(text, buttons=buttons, **kwargs)
-    except Exception:
-        return await event.reply(text, buttons=buttons, **kwargs)
-
-def premium_buttons():
-    # Telegram does not expose arbitrary background colors for inline buttons.
-    # These labels create a colorful/premium appearance using emoji + typography.
-    return [
-        [Button.inline("💎 𝐁𝐔𝐘 𝐏𝐑𝐄𝐌𝐈𝐔𝐌", data="buy_menu")],
-        [Button.inline("💰 𝐖𝐀𝐋𝐋𝐄𝐓 • 𝐃𝐄𝐏𝐎𝐒𝐈𝐓", data="deposit")],
-        [Button.inline("🎟️ 𝐑𝐄𝐃𝐄𝐄𝐌 𝐂𝐎𝐃𝐄", data="redeem_prompt")],
-        [Button.url("✨ 𝐏𝐑𝐄𝐌𝐈𝐔𝐌 𝐅𝐄𝐀𝐓𝐔𝐑𝐄𝐒", url=PREMIUM_FEATURES_LINK)],
-    ]
-
-def premium_plan_buttons():
-    return [
-        [Button.inline("💎 𝐌𝐎𝐍𝐓𝐇𝐋𝐘 • ₹45 / 30 DAYS", data="buy_monthly")],
-        [Button.inline("⚡ 𝐐𝐔𝐀𝐑𝐓𝐄𝐑𝐋𝐘 • ₹120 / 90 DAYS", data="buy_quarterly")],
-        [Button.inline("👑 𝐘𝐄𝐀𝐑𝐋𝐘 • ₹490 / 365 DAYS", data="buy_yearly")],
-        [Button.inline("↩️ 𝐁𝐀𝐂𝐊", data="back_home")],
-    ]
-
 
 # ─── CHANNEL VERIFICATION ───
 REQUIRED_CHANNELS = [
@@ -1206,8 +1019,8 @@ async def is_user_in_channel(user_id, channel_data):
 def get_join_buttons():
     buttons = []
     for idx, ch in enumerate(REQUIRED_CHANNELS, 1):
-        buttons.append([Button.url(text=f"🔗 𝐉𝐎𝐈𝐍 • {ch['name']}", url=ch["invite"])])
-    buttons.append([Button.inline(text="✅ 𝐕𝐄𝐑𝐈𝐅𝐘 𝐀𝐋𝐋", data=b"verify_channels")])
+        buttons.append([Button.url(text=f"🔗 Join {ch['name']}", url=ch["invite"])])
+    buttons.append([Button.inline(text="✅ I have joined all", data=b"verify_channels")])
     return buttons
 
 async def shutdown_handler(sig, frame):
@@ -1238,10 +1051,6 @@ signal.signal(signal.SIGINT, lambda s, f: asyncio.create_task(shutdown_handler(s
 
 async def safe_reply(event, text, buttons=None, **kwargs):
     try:
-        if PREMIUM_EMOJI_IDS and "formatting_entities" not in kwargs and "parse_mode" not in kwargs:
-            text, entities = _premium_entity_text(text)
-            if entities:
-                kwargs["formatting_entities"] = entities
         return await event.reply(text, buttons=buttons, **kwargs)
     except FloodWaitError as e:
         wait = e.seconds + 1
@@ -1252,10 +1061,6 @@ async def safe_reply(event, text, buttons=None, **kwargs):
 
 async def safe_respond(event, text, **kwargs):
     try:
-        if PREMIUM_EMOJI_IDS and "formatting_entities" not in kwargs and "parse_mode" not in kwargs:
-            text, entities = _premium_entity_text(text)
-            if entities:
-                kwargs["formatting_entities"] = entities
         return await event.respond(text, **kwargs)
     except FloodWaitError as e:
         wait = e.seconds + 1
@@ -1266,10 +1071,6 @@ async def safe_respond(event, text, **kwargs):
 
 async def safe_edit(event, text, buttons=None, **kwargs):
     try:
-        if PREMIUM_EMOJI_IDS and "formatting_entities" not in kwargs and "parse_mode" not in kwargs:
-            text, entities = _premium_entity_text(text)
-            if entities:
-                kwargs["formatting_entities"] = entities
         return await event.edit(text, buttons=buttons, **kwargs)
     except FloodWaitError as e:
         wait = e.seconds + 1
@@ -1330,22 +1131,25 @@ async def start_handler(event):
     user_id = event.sender_id
     broadcast_users.add(user_id)
     save_users(broadcast_users)
-    buttons = premium_buttons()
+    buttons = [
+        [Button.inline("💎 Buy Premium", data="buy_menu")],
+        [Button.inline("💰 Deposit / Check Balance", data="deposit")],
+        [Button.inline("🎟️ Redeem Code", data="redeem_prompt")],
+        [Button.url("🔗 Premium Features", url=PREMIUM_FEATURES_LINK)],
+    ]
     bal = await get_balance(user_id)
     intro = (
-        f"╔══════════════════════════════════════╗\n"
-        f"║  {PREMIUM_UI_TITLE}  ║\n"
-        f"╚══════════════════════════════════════╝\n\n"
-        f"✨ 𝐔𝐋𝐓𝐈𝐌𝐀𝐓𝐄 𝐔𝐒𝐄𝐑𝐁𝐎𝐓 𝐌𝐀𝐍𝐀𝐆𝐄𝐑\n"
-        f"{PREMIUM_UI_DIVIDER}\n"
-        f"🚀 𝐃𝐄𝐏𝐋𝐎𝐘  →  /login\n"
-        f"🛑 𝐒𝐓𝐎𝐏     →  /logout\n\n"
-        f"💰 𝐖𝐀𝐋𝐋𝐄𝐓  →  ₹{bal:.2f}\n"
-        f"🛡️ 𝐏𝐑𝐄𝐌𝐈𝐔𝐌  →  𝐀𝐂𝐓𝐈𝐕𝐄 𝐅𝐄𝐀𝐓𝐔𝐑𝐄 𝐒𝐘𝐒𝐓𝐄𝐌\n"
-        f"{PREMIUM_UI_DIVIDER}\n"
-        f"✨ Select an option below to continue."
+        "╔═══════════════════════════════════════════╗\n"
+        "║  ✦ 👑 ⚡️ZYЯΣX ✕ ΛΣƬΉΣЯ⚡️ 𝐀𝐔𝐓𝐎-𝐃𝐄𝐏𝐋𝐎𝐘 👑 ✦  ║\n"
+        "╚═══════════════════════════════════════════╝\n\n"
+        f"Welcome to the **Ultimate Userbot Manager**.\n"
+        f"• To start your personal userbot, type `/login`\n"
+        f"• To stop it, use `/logout`\n"
+        f"• Use the buttons below to buy premium or deposit.\n\n"
+        f"💰 **Your Wallet Balance:** ₹{bal:.2f}\n\n"
+        "Enjoy the premium experience! 🚀"
     )
-    await premium_reply(event, intro, buttons=buttons)
+    await safe_reply(event, intro, buttons=buttons)
     not_joined = []
     for ch in REQUIRED_CHANNELS:
         if not await is_user_in_channel(user_id, ch):
@@ -1673,8 +1477,12 @@ async def callback_handler(event):
             expiry = prem['expiry_date'].strftime("%Y-%m-%d")
             await safe_edit(event, f"💎 You are already a premium user!\nPlan: {prem['plan'].upper()}\nExpires: {expiry}")
             return
-        buttons = premium_plan_buttons()
-        await safe_edit(event, f"💎 𝐏𝐑𝐄𝐌𝐈𝐔𝐌 𝐏𝐋𝐀𝐍𝐒\n{PREMIUM_UI_DIVIDER}\n✨ Choose your plan below.", buttons=buttons)
+        buttons = [
+            [Button.inline("📅 Monthly (₹45/30 days)", data="buy_monthly")],
+            [Button.inline("📅 Quarterly (₹120/90 days)", data="buy_quarterly")],
+            [Button.inline("📅 Yearly (₹490/365 days)", data="buy_yearly")],
+        ]
+        await safe_edit(event, "💰 **Select your premium plan:**", buttons=buttons)
     elif data.startswith("buy_"):
         plan = data.split("_")[1]
         user_id = event.sender_id
@@ -1828,8 +1636,12 @@ async def buy_cmd(event):
         expiry = prem['expiry_date'].strftime("%Y-%m-%d")
         await safe_reply(event, f"💎 You are already a premium user!\nPlan: {prem['plan'].upper()}\nExpires: {expiry}")
         return
-    buttons = premium_plan_buttons()
-    await premium_reply(event, f"💎 𝐏𝐑𝐄𝐌𝐈𝐔𝐌 𝐏𝐋𝐀𝐍𝐒\n{PREMIUM_UI_DIVIDER}\n✨ Choose your plan below.", buttons=buttons)
+    buttons = [
+        [Button.inline("📅 Monthly (₹45/30 days)", data="buy_monthly")],
+        [Button.inline("📅 Quarterly (₹120/90 days)", data="buy_quarterly")],
+        [Button.inline("📅 Yearly (₹490/365 days)", data="buy_yearly")],
+    ]
+    await safe_reply(event, "💰 **Select your premium plan:**", buttons=buttons)
 
 @MAIN_BOT_CLIENT.on(events.NewMessage(pattern="/deposit"))
 async def deposit_cmd(event):
